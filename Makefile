@@ -4,11 +4,14 @@ SRCDIR=src
 BINDIR=bin
 OBJDIR=obj
 
-SRCS=tsstore.cc
-OBJS=$(SRCS:%.cc=$(OBJDIR)/%.o)
+SRCS=$(wildcard $(SRCDIR)/*.cc)
+OBJS=$(SRCS:$(SRCDIR)/%.cc=$(OBJDIR)/%.o)
 
 
 all: tsstore
+
+run: tsstore
+	$(BINDIR)/tsstore
 
 tsstore: $(OBJS) | $(BINDIR)
 	$(CC) $(OBJS) -o $(BINDIR)/tsstore
