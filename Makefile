@@ -1,5 +1,7 @@
 CC=g++
 
+EXE=tsstore
+
 SRCDIR=src
 BINDIR=bin
 OBJDIR=obj
@@ -8,13 +10,13 @@ SRCS=$(wildcard $(SRCDIR)/*.cc)
 OBJS=$(SRCS:$(SRCDIR)/%.cc=$(OBJDIR)/%.o)
 
 
-all: tsstore
+all: $(BINDIR)/$(EXE)
 
-run: tsstore
-	$(BINDIR)/tsstore
+run: $(BINDIR)/$(EXE)
+	$(BINDIR)/$(EXE)
 
-tsstore: $(OBJS) | $(BINDIR)
-	$(CC) $(OBJS) -o $(BINDIR)/tsstore
+$(BINDIR)/$(EXE): $(OBJS) | $(BINDIR)
+	$(CC) $(OBJS) -o $(BINDIR)/$(EXE)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cc | $(OBJDIR)
 	$(CC) -c -o $@ $<
