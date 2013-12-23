@@ -1,20 +1,27 @@
 CC=g++
-SRC=src
-BIN=bin
-OBJ=obj
+
+SRCDIR=src
+BINDIR=bin
+OBJDIR=obj
+
+SRCS=tsstore.cc
+OBJS=$(SRCS:%.cc=$(OBJDIR)/%.o)
+
 
 all: tsstore
 
-tsstore: mkdirs tsstore.o
-	$(CC) $(OBJ)/tsstore.o -o $(BIN)/tsstore
+tsstore: $(OBJS) | $(BINDIR)
+	$(CC) $(OBJS) -o $(BINDIR)/tsstore
 
-tsstore.o:
-	$(CC) -c $(SRC)/tsstore.cc -o $(OBJ)/tsstore.o
+$(OBJDIR)/%.o: $(SRCDIR)/%.cc | $(OBJDIR)
+	$(CC) -c -o $@ $<
 
-mkdirs:
-	mkdir $(BIN)
-	mkdir $(OBJ)
+$(OBJDIR):
+	mkdir $(OBJDIR)
+
+$(BINDIR):
+	mkdir $(BINDIR)
 
 clean:
-	rm -rf $(OBJ)
-	rm -rf $(BIN)
+	rm -rf $(OBJDIR)
+	rm -rf $(BINDIR)
