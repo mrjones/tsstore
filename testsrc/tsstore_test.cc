@@ -42,7 +42,7 @@ TEST(RamBlockDeviceTest, ReadWrite) {
 }
 
 TEST(TSStoreTest, Foo) {
-  TSStore store(new RamBlockDevice(10LL << 20));
+  TSStore store(TSStore::Options(), new RamBlockDevice(10LL << 20));
   std::unique_ptr<TSWriter> writer = store.OpenWriter("fooseries");
 
   std::unique_ptr<TSReader> reader = store.OpenReader("fooseries");

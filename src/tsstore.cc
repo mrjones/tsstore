@@ -32,9 +32,19 @@ struct DataSegment {
 
 
 
-TSStore::TSStore(BlockDevice* device) : device_(device) { }
+TSStore::TSStore(const Options& options,
+                 BlockDevice* device) :
+  options_(options), device_(device) { }
+
 TSStore::~TSStore() { }
 
-std::string TSStore::foo() {
-  return "foo";
+TSStore::Block TSStore::AllocateBlock() {
+  Block b;
+  b.offset = 0;
+  b.length = options_.block_size;
+  return b;
+}
+
+TSWriter::TSWriter(TSID series_id) : series_id_(series_id) { 
+
 }
