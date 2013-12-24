@@ -1,7 +1,9 @@
 #include "gtest/gtest.h"
+#include "../src/tsstore.h"
 
 TEST(Foo, Bar) {
-  EXPECT_EQ(1, 1);
+  TSStore store;
+  ASSERT_EQ("foo", store.foo());
 }
 
 int main(int argc, char** argv) {

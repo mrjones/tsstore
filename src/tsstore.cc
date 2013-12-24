@@ -1,5 +1,6 @@
-#include <iostream>
 #include <inttypes.h>
+
+#include "tsstore.h"
 
 const int MAX_NAME_LEN = 32;
 const int MAX_COLS = 8;
@@ -30,6 +31,10 @@ struct DataSegment {
 
 
 
-int main(int argc, char* argv[]) {
-  std::cout << "Hello world!" << std::endl;
+
+TSStore::TSStore() { }
+TSStore::~TSStore() { }
+
+std::string TSStore::foo() {
+  return "foo";
 }

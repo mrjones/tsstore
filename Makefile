@@ -1,7 +1,5 @@
 CC=g++
 
-EXE=tsstore
-
 SRCDIR=src
 BINDIR=bin
 OBJDIR=obj
@@ -11,21 +9,15 @@ TEST_BINDIR=testbin
 
 GTESTDIR=/home/ubuntu/lib/gtest-1.7.0
 
-SRCS=$(wildcard $(SRCDIR)/*.cc)
-OBJS=$(SRCS:$(SRCDIR)/%.cc=$(OBJDIR)/%.o)
-
-TEST_SRCS=$(wildcard $(TEST_SRCDIR)/*.cc)
-TEST_OUTS=$(TEST_SRCS:$(TEST_SRCDIR)/%.cc=$(TEST_BINDIR)/%)
-
 all: $(BINDIR)/$(EXE)
 
+test: $(TEST_BINDIR)/tsstore_test
+		$(TEST_BINDIR)/tsstore_test
 
-test: $(TEST_OUTS)
-	echo $<
-	for test in '$<'; do $$test; done
 
-$(TEST_BINDIR)/%: $(TEST_SRCDIR)/%.cc $(OBJDIR)/libgtest.a | $(TEST_BINDIR)
-	$(CC) -isystem $(GTESTDIR)/include -pthread $< $(OBJDIR)/libgtest.a -o $@
+
+$(TEST_BINDIR)/tsstore_test: $(TEST_SRCDIR)/tsstore_test.cc $(OBJDIR)/libgtest.a $(OBJDIR)/tsstore.o | $(TEST_BINDIR)
+	$(CC) -isystem $(GTESTDIR)/include -pthread $(OBJDIR)/tsstore.o $< $(OBJDIR)/libgtest.a -o $@
 
 #
 # GTEST
@@ -40,15 +32,15 @@ $(OBJDIR)/libgtest.a: $(OBJDIR)/gtest-all.o
 
 
 
-run: $(BINDIR)/$(EXE)
-	$(BINDIR)/$(EXE)
+run: $(BINDIR)/tsstore
+	$(BINDIR)/tsstore
 
-$(BINDIR)/$(EXE): $(OBJS) | $(BINDIR)
-	$(CC) $(OBJS) -o $(BINDIR)/$(EXE)
+
+$(BINDIR)/tsstore: $(OBJDIR)/tsstore.o $(OBJDIR)/tsstore_main.o | $(BINDIR)
+	$(CC) $(OBJDIR)/tsstore.o $(OBJDIR)/tsstore_main.o -o $(BINDIR)/tsstore
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cc | $(OBJDIR)
 	$(CC) -c $< -o $@
-
 
 $(OBJDIR):
 	mkdir $(OBJDIR)
