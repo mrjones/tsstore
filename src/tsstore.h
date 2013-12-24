@@ -1,5 +1,14 @@
 #include <string>
 
+class BlockDevice {
+ public:
+  BlockDevice() { }
+  virtual ~BlockDevice() { }
+
+  virtual int64_t Write(int64_t offset, int64_t length, const char* data) = 0;
+  virtual int64_t Read(int64_t offset, int64_t length, char* out) = 0;
+};
+
 class TSStore {
  public:
   TSStore();
