@@ -41,6 +41,13 @@ TEST(RamBlockDeviceTest, ReadWrite) {
   ASSERT_EQ(kData, out);
 }
 
+TEST(TSStoreTest, Foo) {
+  TSStore store(new RamBlockDevice(10LL << 20));
+  std::unique_ptr<TSWriter> writer = store.OpenWriter("fooseries");
+
+  std::unique_ptr<TSReader> reader = store.OpenReader("fooseries");
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

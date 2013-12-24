@@ -32,7 +32,7 @@ struct DataSegment {
 
 
 
-TSStore::TSStore() { }
+TSStore::TSStore(BlockDevice* device) : device_(device) { }
 TSStore::~TSStore() { }
 
 std::string TSStore::foo() {
