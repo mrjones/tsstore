@@ -12,13 +12,13 @@ public:
     delete data_;
  }
 
-  virtual int64_t Write(int64_t offset, int64_t length, const char* data) override {
-    memcpy(data_ + offset, data, length);
+  virtual int64_t Write(int64_t offset, int64_t length, const void* buf) override {
+    memcpy(data_ + offset, buf, length);
     return length;
   }
 
-  virtual int64_t Read(int64_t offset, int64_t length, char* out) override { 
-    memcpy(out, data_ + offset, length);
+  virtual int64_t Read(int64_t offset, int64_t length, void* buf) override { 
+    memcpy(buf, data_ + offset, length);
     return length;
   }
 
