@@ -83,16 +83,7 @@ class TSStore {
   std::unique_ptr<TSWriter> OpenWriter(const std::string& name);
   std::unique_ptr<TSReader> OpenReader(const std::string& name);
 
-  TSID CreateSeries(const SeriesSpec& spec) {
-    TSID id = next_id_++;
-
-    Timeseries* timeseries = &(series_[id]);
-    timeseries->spec = spec;
-    
-    series_ids_[spec.name] = id;
-
-    return id;
-  }
+  TSID CreateSeries(const SeriesSpec& spec);
 
  private:
   typedef int64_t Timestamp;
