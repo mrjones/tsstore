@@ -78,7 +78,7 @@ bool TSWriter::Write(int64_t timestamp, std::vector<int64_t> data) {
   for (uint i = 0; i < data.size(); ++i) {
     memcpy(buf + (i + 1) * sizeof(int64_t), &(data[i]), sizeof(int64_t));
   }
-  // TODO: Come up with a better marker
+  // Writes a 0 timestamp for the next entry to terminate this timeseries.
   memset(buf + (data.size() + 1) * sizeof(int64_t), 0, sizeof(int64_t));
 
   int bytes_written = block_device_->Write(cursor_.block_offset, write_size, (void*)buf);
