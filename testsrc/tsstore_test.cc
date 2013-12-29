@@ -59,12 +59,12 @@ TEST(TSStoreTest, WriteAndReadBack) {
   RamBlockDevice* bd = new RamBlockDevice(10LL << 20);
   TSStore store(TSStore::Options(), bd);
 
-  TSStore::SeriesSpec spec;
+  SeriesSpec spec;
   spec.name = "fooseries";
 
-  TSStore::Column column;
+  Column column;
   column.name = "data";
-  column.type = TSStore::INT64;
+  column.type = INT64;
   spec.columns.push_back(column);
 
   TSID id = store.CreateSeries(spec);

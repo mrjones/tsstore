@@ -5,33 +5,6 @@
 
 #include "tsstore.h"
 
-const int MAX_NAME_LEN = 32;
-const int MAX_COLS = 8;
-
-struct Superblock {
-  int64_t timestamp;
-};
-
-struct Column {
-  enum Type {
-    INT64,
-  };
-
-  Type type;
-  char name[MAX_NAME_LEN];
-};
-
-struct SeriesMetadata {
-  int64_t id;
-  char name[MAX_NAME_LEN];
-  int numCols;
-  Column columns[MAX_COLS];
-};
-
-struct DataSegment {
-
-};
-
 
 TSStore::TSStore(const Options& options,
                  BlockDevice* device) :
@@ -41,24 +14,36 @@ TSStore::TSStore(const Options& options,
 TSStore::~TSStore() { }
 
 std::unique_ptr<TSWriter> TSStore::OpenWriter(const std::string& name) {
-  auto i = series_ids_.find(name);
-  if (i == series_ids_.end()) {
+  auto id = series_ids_.find(name);
+  if (id == series_ids_.end()) {
     std::cout << "Error: Couldn't open: " << name << std::endl;
     return nullptr;
+  }
+
+  TSID tsid = id->second;
+  auto series_info = series_.find(tsid);
+  if (series_info == series_.end()) {
+    std::cout << "Internal Error: Couldn't find info for id: " << tsid << std::endl;
   }
 
   // shared ptr?
   Cursor c;
   c.block = AllocateBlock();
   c.block_offset = 0;
-  return std::unique_ptr<TSWriter>(new TSWriter(i->second, c, device_.get()));
+  return std::unique_ptr<TSWriter>(new TSWriter(tsid, series_info->second.spec, c, device_.get()));
 }
 
 std::unique_ptr<TSReader> TSStore::OpenReader(const std::string& name) {
-  auto i = series_ids_.find(name);
-  if (i == series_ids_.end()) {
+  auto id = series_ids_.find(name);
+  if (id == series_ids_.end()) {
     std::cout << "Error: Couldn't open: " << name << std::endl;
     return nullptr;
+  }
+
+  TSID tsid = id->second;
+  auto series_info = series_.find(tsid);
+  if (series_info == series_.end()) {
+    std::cout << "Internal Error: Couldn't find info for id: " << tsid << std::endl;
   }
 
   // TODO: actually locate the data segment
@@ -66,7 +51,7 @@ std::unique_ptr<TSReader> TSStore::OpenReader(const std::string& name) {
   dummy.offset = 0;
   dummy.length = options_.block_size;
 
-  return std::unique_ptr<TSReader>(new TSReader(i->second, dummy, device_.get()));
+  return std::unique_ptr<TSReader>(new TSReader(tsid, series_info->second.spec, dummy, device_.get()));
 }
 
 Block TSStore::AllocateBlock() {
@@ -76,8 +61,8 @@ Block TSStore::AllocateBlock() {
   return b;
 }
 
-TSWriter::TSWriter(TSID series_id, Cursor cursor, BlockDevice* block_device)
-  : series_id_(series_id), cursor_(cursor), block_device_(block_device) {
+TSWriter::TSWriter(TSID series_id, const SeriesSpec& spec, const Cursor& cursor, BlockDevice* block_device)
+  : series_id_(series_id), spec_(spec), cursor_(cursor), block_device_(block_device) {
 }
 
 bool TSWriter::Write(int64_t timestamp, std::vector<int64_t> data) {
@@ -100,8 +85,8 @@ bool TSWriter::Write(int64_t timestamp, std::vector<int64_t> data) {
   return bytes_written == write_size;
 }
 
-TSReader::TSReader(TSID series_id, Block block, BlockDevice* block_device)
-  : series_id_(series_id), block_device_(block_device) {
+TSReader::TSReader(TSID series_id, const SeriesSpec& spec, const Block& block, BlockDevice* block_device)
+  : series_id_(series_id), spec_(spec), block_device_(block_device) {
   cursor_.block = block;
   cursor_.block_offset = 0;
 }
