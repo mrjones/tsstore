@@ -41,11 +41,32 @@ TEST(RamBlockDeviceTest, ReadWrite) {
   ASSERT_EQ(kData, out);
 }
 
-TEST(TSStoreTest, Foo) {
+TEST(TSStoreTest, WriteAndReadBack) {
   TSStore store(TSStore::Options(), new RamBlockDevice(10LL << 20));
+
+  TSStore::SeriesSpec spec;
+  spec.name = "fooseries";
+
+  TSStore::Column column;
+  column.name = "data";
+  column.type = TSStore::INT64;
+  spec.columns.push_back(column);
+
+  TSID id = store.CreateSeries(spec);
+  if (id) {  }
+
   std::unique_ptr<TSWriter> writer = store.OpenWriter("fooseries");
+  std::vector<int64_t> d { 99 };
+  EXPECT_TRUE(writer->Write(1234567890, d));
 
   std::unique_ptr<TSReader> reader = store.OpenReader("fooseries");
+  int64_t timestamp_out;
+  std::vector<int64_t> data_out;
+  EXPECT_TRUE(reader->Next(&timestamp_out, &data_out));
+  EXPECT_EQ(1234567890, timestamp_out);
+  EXPECT_EQ(1, data_out.size());
+  EXPECT_EQ(99, data_out[1]);
+  EXPECT_FALSE(reader->Next(&timestamp_out, &data_out));
 }
 
 int main(int argc, char** argv) {

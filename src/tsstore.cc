@@ -34,7 +34,7 @@ struct DataSegment {
 
 TSStore::TSStore(const Options& options,
                  BlockDevice* device) :
-  options_(options), device_(device) { }
+  options_(options), device_(device), next_id_(0) { }
 
 TSStore::~TSStore() { }
 
@@ -45,6 +45,14 @@ TSStore::Block TSStore::AllocateBlock() {
   return b;
 }
 
-TSWriter::TSWriter(TSID series_id) : series_id_(series_id) { 
+TSWriter::TSWriter(TSID series_id) : series_id_(series_id) { }
 
+bool TSWriter::Write(int64_t timestamp, std::vector<int64_t> data) {
+  return false;
+}
+
+TSReader::TSReader(TSID series_id) : series_id_(series_id) { }
+
+bool TSReader::Next(int64_t* timestamp_out, std::vector<int64_t>* data_out) {
+  return false;
 }
