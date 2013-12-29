@@ -61,6 +61,7 @@ std::unique_ptr<TSReader> TSStore::OpenReader(const std::string& name) {
     return nullptr;
   }
 
+  // TODO: actually locate the data segment
   Block dummy;
   dummy.offset = 0;
   dummy.length = options_.block_size;
@@ -106,6 +107,7 @@ TSReader::TSReader(TSID series_id, Block block, BlockDevice* block_device)
 }
 
 bool TSReader::Next(int64_t* timestamp_out, std::vector<int64_t>* data_out) {
+  // TODO: get the number of columns from the series spec
   const int kColumns = 1;
   const int kReadSize = (1 + kColumns) * sizeof(int64_t);
   char buf[kReadSize];
@@ -118,6 +120,7 @@ bool TSReader::Next(int64_t* timestamp_out, std::vector<int64_t>* data_out) {
   }
   cursor_.block_offset += bytes_read;
 
+  // TODO: figure out if we've reached the end of the datastream or not
   memcpy(timestamp_out, buf, sizeof(int64_t));
 
   data_out->resize(kColumns);
