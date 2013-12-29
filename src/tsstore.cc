@@ -28,8 +28,8 @@ std::unique_ptr<TSWriter> TSStore::OpenWriter(const std::string& name) {
 
   // shared ptr?
   Cursor c;
-  c.block = AllocateBlock();
-  c.block_offset = 0;
+  c.segment = AllocateSegment();
+  c.segment_offset = 0;
   return std::unique_ptr<TSWriter>(new TSWriter(tsid, series_info->second.spec, c, device_.get()));
 }
 
@@ -47,17 +47,29 @@ std::unique_ptr<TSReader> TSStore::OpenReader(const std::string& name) {
   }
 
   // TODO: actually locate the data segment
-  Block dummy;
+  Segment dummy;
   dummy.offset = 0;
-  dummy.length = options_.block_size;
+  dummy.length = options_.segment_size;
 
   return std::unique_ptr<TSReader>(new TSReader(tsid, series_info->second.spec, dummy, device_.get()));
 }
 
-Block TSStore::AllocateBlock() {
-  Block b;
+TSID TSStore::CreateSeries(const SeriesSpec& spec) {
+  TSID id = next_id_++;
+
+  Timeseries* timeseries = &(series_[id]);
+  timeseries->spec = spec;
+    
+  series_ids_[spec.name] = id;
+
+  return id;
+}
+
+
+Segment TSStore::AllocateSegment() {
+  Segment b;
   b.offset = 0;
-  b.length = options_.block_size;
+  b.length = options_.segment_size;
   return b;
 }
 
@@ -67,9 +79,9 @@ TSWriter::TSWriter(TSID series_id, const SeriesSpec& spec, const Cursor& cursor,
 
 bool TSWriter::Write(int64_t timestamp, std::vector<int64_t> data) {
   int write_size = sizeof(int64_t) * (2 + data.size());
-  if (write_size + cursor_.block_offset > cursor_.block.length) {
-    // allocate new block
-    std::cout << "Error: Can't allocate new blocks yet.";
+  if (write_size + cursor_.segment_offset > cursor_.segment.length) {
+    // allocate new segment
+    std::cout << "Error: Can't allocate new segments yet.";
   }
 
   char buf[write_size];
@@ -81,15 +93,15 @@ bool TSWriter::Write(int64_t timestamp, std::vector<int64_t> data) {
   // Writes a 0 timestamp for the next entry to terminate this timeseries.
   memset(buf + (data.size() + 1) * sizeof(int64_t), 0, sizeof(int64_t));
 
-  int bytes_written = block_device_->Write(cursor_.block_offset, write_size, (void*)buf);
-  cursor_.block_offset += bytes_written - sizeof(int64_t);  // subtract off the 0 terminator
+  int bytes_written = block_device_->Write(cursor_.segment_offset, write_size, (void*)buf);
+  cursor_.segment_offset += bytes_written - sizeof(int64_t);  // subtract off the 0 terminator
   return bytes_written == write_size;
 }
 
-TSReader::TSReader(TSID series_id, const SeriesSpec& spec, const Block& block, BlockDevice* block_device)
+TSReader::TSReader(TSID series_id, const SeriesSpec& spec, const Segment& segment, BlockDevice* block_device)
   : series_id_(series_id), spec_(spec), block_device_(block_device) {
-  cursor_.block = block;
-  cursor_.block_offset = 0;
+  cursor_.segment = segment;
+  cursor_.segment_offset = 0;
 }
 
 bool TSReader::Next(int64_t* timestamp_out, std::vector<int64_t>* data_out) {
@@ -98,13 +110,13 @@ bool TSReader::Next(int64_t* timestamp_out, std::vector<int64_t>* data_out) {
   const int kReadSize = (1 + kColumns) * sizeof(int64_t);
   char buf[kReadSize];
 
-  int bytes_read = block_device_->Read(cursor_.block.offset + cursor_.block_offset, kReadSize, &buf);
+  int bytes_read = block_device_->Read(cursor_.segment.offset + cursor_.segment_offset, kReadSize, &buf);
 
   if (bytes_read != kReadSize) {
     std::cout << "Error: Short read.";
     return false;
   }
-  cursor_.block_offset += bytes_read;
+  cursor_.segment_offset += bytes_read;
 
   memcpy(timestamp_out, buf, sizeof(int64_t));
 

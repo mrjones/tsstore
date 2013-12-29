@@ -14,14 +14,14 @@ class BlockDevice {
   virtual int64_t Read(int64_t offset, int64_t length, void* out) = 0;
 };
 
-struct Block {
+struct Segment {
   int64_t offset;
   int64_t length;
 };
 
 struct Cursor {
-  Block block;
-  int64_t block_offset;
+  Segment segment;
+  int64_t segment_offset;
 };
 
 enum DataType {
@@ -58,7 +58,7 @@ class TSWriter {
 
 class TSReader {
  public:
-  TSReader(TSID id, const SeriesSpec& spec, const Block& data, BlockDevice* block_device);
+  TSReader(TSID id, const SeriesSpec& spec, const Segment& data, BlockDevice* block_device);
 
   bool Next(int64_t* timestamp_out, std::vector<int64_t>* data_out);
 
@@ -72,9 +72,9 @@ class TSReader {
 class TSStore {
  public:
   struct Options {
-    Options() : block_size(1L << 20) { }
+    Options() : segment_size(1L << 20) { }
 
-    int64_t block_size;
+    int64_t segment_size;
   };
 
   TSStore(const Options& options, BlockDevice* device);
@@ -90,10 +90,10 @@ class TSStore {
 
   struct Timeseries {
     SeriesSpec spec;
-    std::map<Timestamp, Block> blocks;
+    std::map<Timestamp, Segment> segments;
   };
 
-  Block AllocateBlock();
+  Segment AllocateSegment();
 
   const Options options_;
   std::unique_ptr<BlockDevice> device_;
