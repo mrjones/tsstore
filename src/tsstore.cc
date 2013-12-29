@@ -66,7 +66,7 @@ TSWriter::TSWriter(TSID series_id, const SeriesSpec& spec, const Cursor& cursor,
 }
 
 bool TSWriter::Write(int64_t timestamp, std::vector<int64_t> data) {
-  int write_size = sizeof(int64_t) * (1 + data.size());
+  int write_size = sizeof(int64_t) * (2 + data.size());
   if (write_size + cursor_.block_offset > cursor_.block.length) {
     // allocate new block
     std::cout << "Error: Can't allocate new blocks yet.";
@@ -75,10 +75,11 @@ bool TSWriter::Write(int64_t timestamp, std::vector<int64_t> data) {
   char buf[write_size];
 
   memcpy(buf, &timestamp, sizeof(int64_t));
-
   for (uint i = 0; i < data.size(); ++i) {
     memcpy(buf + (i + 1) * sizeof(int64_t), &(data[i]), sizeof(int64_t));
   }
+  // TODO: Come up with a better marker
+  memset(buf + (data.size() + 1) * sizeof(int64_t), 0, sizeof(int64_t));
 
   int bytes_written = block_device_->Write(cursor_.block_offset, write_size, (void*)buf);
   cursor_.block_offset += bytes_written;
@@ -105,8 +106,12 @@ bool TSReader::Next(int64_t* timestamp_out, std::vector<int64_t>* data_out) {
   }
   cursor_.block_offset += bytes_read;
 
-  // TODO: figure out if we've reached the end of the datastream or not
   memcpy(timestamp_out, buf, sizeof(int64_t));
+
+  if (*timestamp_out == 0) {
+    // A timestamp of 0 indicates the end of the datastream.
+    return false;
+  }
 
   data_out->resize(kColumns);
   for (int i = 0; i < kColumns; ++i) {
