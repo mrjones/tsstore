@@ -82,7 +82,7 @@ bool TSWriter::Write(int64_t timestamp, std::vector<int64_t> data) {
   memset(buf + (data.size() + 1) * sizeof(int64_t), 0, sizeof(int64_t));
 
   int bytes_written = block_device_->Write(cursor_.block_offset, write_size, (void*)buf);
-  cursor_.block_offset += bytes_written;
+  cursor_.block_offset += bytes_written - sizeof(int64_t);  // subtract off the 0 terminator
   return bytes_written == write_size;
 }
 

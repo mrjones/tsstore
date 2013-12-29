@@ -70,16 +70,27 @@ TEST(TSStoreTest, WriteAndReadBack) {
   TSID id = store.CreateSeries(spec);
   if (id) {  }
   std::unique_ptr<TSWriter> writer(store.OpenWriter("fooseries"));
-  std::vector<int64_t> d { 999999999 };
-  EXPECT_TRUE(writer->Write(1234567890, d));
+
+  std::vector<int64_t> d1 { 999999999 };
+  EXPECT_TRUE(writer->Write(1234567890, d1));
+
+  std::vector<int64_t> d2 { 88888888 };
+  EXPECT_TRUE(writer->Write(1234567891, d2));
 
   std::unique_ptr<TSReader> reader = store.OpenReader("fooseries");
   int64_t timestamp_out;
   std::vector<int64_t> data_out;
+
   EXPECT_TRUE(reader->Next(&timestamp_out, &data_out));
   EXPECT_EQ(1234567890, timestamp_out);
   EXPECT_EQ(1, data_out.size());
   EXPECT_EQ(999999999, data_out[0]);
+
+  EXPECT_TRUE(reader->Next(&timestamp_out, &data_out));
+  EXPECT_EQ(1234567891, timestamp_out);
+  EXPECT_EQ(1, data_out.size());
+  EXPECT_EQ(88888888, data_out[0]);
+
   EXPECT_FALSE(reader->Next(&timestamp_out, &data_out));
 }
 
