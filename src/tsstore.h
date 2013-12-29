@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+class TSStore;
+
 class BlockDevice {
  public:
   BlockDevice() { }
@@ -12,13 +14,22 @@ class BlockDevice {
   virtual int64_t Read(int64_t offset, int64_t length, void* out) = 0;
 };
 
-class TSStore;
+struct Block {
+  int64_t offset;
+  int64_t length;
+};
+
+struct Cursor {
+  Block block;
+  int64_t block_offset;
+};
+
 
 typedef int64_t TSID;
 
 class TSWriter {
  public:
-  TSWriter(TSID id);
+  TSWriter(TSID id, Cursor cursor, BlockDevice* block_device);
 
   // TODO: make this better
   // - varargs or templates?
@@ -27,16 +38,20 @@ class TSWriter {
 
  private:
   TSID series_id_;
+  Cursor cursor_;
+  BlockDevice* block_device_;
 };
 
 class TSReader {
  public:
-  TSReader(TSID id);
+  TSReader(TSID id, Block data, BlockDevice* block_device);
 
   bool Next(int64_t* timestamp_out, std::vector<int64_t>* data_out);
 
  private:
   TSID series_id_;
+  Cursor cursor_;
+  BlockDevice* block_device_;
 };
 
 class TSStore {
@@ -50,18 +65,8 @@ class TSStore {
   TSStore(const Options& options, BlockDevice* device);
   ~TSStore();
 
-  std::unique_ptr<TSWriter> OpenWriter(const std::string& name) {
-    auto i = series_ids_.find(name);
-    if (i == series_ids_.end()) {
-      return nullptr;
-    }
-
-    return std::unique_ptr<TSWriter>(new TSWriter(i->second));
-  }
-
-  std::unique_ptr<TSReader> OpenReader(const std::string& name) {
-    return nullptr;
-  }
+  std::unique_ptr<TSWriter> OpenWriter(const std::string& name);
+  std::unique_ptr<TSReader> OpenReader(const std::string& name);
 
   enum DataType {
     INT64
@@ -83,21 +88,13 @@ class TSStore {
     Timeseries* timeseries = &(series_[id]);
     timeseries->spec = spec;
     
+    series_ids_[spec.name] = id;
+
     return id;
   }
 
  private:
-  struct Block {
-    int64_t offset;
-    int64_t length;
-  };
-
   typedef int64_t Timestamp;
-
-  struct Cursor {
-    Block* block;
-    int64_t block_offset;
-  };
 
   struct Timeseries {
     SeriesSpec spec;
