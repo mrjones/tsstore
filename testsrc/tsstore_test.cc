@@ -36,6 +36,10 @@ public:
     return length;
   }
 
+  virtual int64_t Size() override {
+    return size_bytes_;
+  }
+
 private:
   int64_t size_bytes_;
   char* data_;
@@ -56,8 +60,13 @@ TEST(RamBlockDeviceTest, ReadWrite) {
 }
 
 TEST(TSStoreTest, WriteAndReadBack) {
+  // TODO: put this logic in SeriesSpec?
+  const int kRecordSize = 2 * sizeof(int64_t);  // timestamp + 1 column
+
   RamBlockDevice* bd = new RamBlockDevice(10LL << 20);
-  TSStore store(TSStore::Options(), bd);
+  TSStore::Options options;
+  options.segment_size = 2 * kRecordSize;
+  TSStore store(options, bd);
 
   SeriesSpec spec;
   spec.name = "fooseries";
@@ -71,26 +80,32 @@ TEST(TSStoreTest, WriteAndReadBack) {
   if (id) {  }
   std::unique_ptr<TSWriter> writer(store.OpenWriter("fooseries"));
 
-  std::vector<int64_t> d1 { 999999999 };
-  EXPECT_TRUE(writer->Write(1234567890, d1));
+  // Insert more than two records to make sure we span segments
+  const int kRecords = 10;
+  for (int i = 0; i < kRecords; ++i) {
+    std::vector<int64_t> d { 9876543210 + i };
+    EXPECT_TRUE(writer->Write(1234567890 + i, d));
+  }
 
-  std::vector<int64_t> d2 { 88888888 };
-  EXPECT_TRUE(writer->Write(1234567891, d2));
 
   std::unique_ptr<TSReader> reader = store.OpenReader("fooseries");
+
   int64_t timestamp_out;
   std::vector<int64_t> data_out;
+  for (int i = 0; i < kRecords; ++i) {
+    timestamp_out = -1;
+    data_out.clear();
 
-  EXPECT_TRUE(reader->Next(&timestamp_out, &data_out));
-  EXPECT_EQ(1234567890, timestamp_out);
-  EXPECT_EQ(1, data_out.size());
-  EXPECT_EQ(999999999, data_out[0]);
+    EXPECT_TRUE(reader->Next(&timestamp_out, &data_out));
+    EXPECT_EQ(1234567890 + i, timestamp_out);
+    EXPECT_EQ(1, data_out.size());
+    if (data_out.size() > 0) {
+      EXPECT_EQ(9876543210 + i, data_out[0]);
+    }
+  }
 
-  EXPECT_TRUE(reader->Next(&timestamp_out, &data_out));
-  EXPECT_EQ(1234567891, timestamp_out);
-  EXPECT_EQ(1, data_out.size());
-  EXPECT_EQ(88888888, data_out[0]);
-
+  timestamp_out = -1;
+  data_out.clear();
   EXPECT_FALSE(reader->Next(&timestamp_out, &data_out));
 }
 
